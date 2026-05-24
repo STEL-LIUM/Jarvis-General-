@@ -94,7 +94,7 @@ Python 3.11+ and [Inno Setup 6](https://jrsoftware.org/isinfo.php) installed.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+ — see [LICENSE](LICENSE).
 
 ## Credits
 
