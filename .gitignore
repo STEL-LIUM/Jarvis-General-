@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/work/
+build/dist/
+*.spec.bak
+
+# Inno Setup
+build/Output/
+*.iss.bak
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Local first-run marker (should never be committed)
+.jarvis_setup_done
