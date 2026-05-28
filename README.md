@@ -34,10 +34,16 @@ System requirements:
 - **Screen vision** — ask *"what's on my screen?"*, *"what anime is this?"*,
   *"read this for me"*, etc. Hides the panel, captures **each monitor at
   full resolution**, asks the local vision model, brings the panel back.
+- **Drag-and-drop files** — drop a text file (`.txt`, `.md`, `.py`, `.json`,
+  source code, etc.) or an image (`.png`, `.jpg`, `.webp`) onto the panel,
+  type your question, hit Enter. Images route to the local vision model;
+  text files are folded into the prompt and answered by the deep model.
 - **Streaming replies** — tokens appear as they're generated.
 - **Hidden reasoning** — DeepSeek's `<think>` blocks are stripped from the
   visible output so you just see the answer.
-- **No telemetry. No internet calls** beyond what Ollama needs to pull models.
+- **Opt-in feedback** — on first launch you decide whether to share your text
+  chats to help train future JARVIS versions. Off by default; nothing leaves
+  your PC unless you click *Yes*. See [Privacy](#privacy) below.
 
 ## First-run setup
 
@@ -48,7 +54,8 @@ When you launch JARVIS Chat for the first time, a small setup window appears:
 2. **Pick a model pack:**
    - **Lite** (~10 GB) — `qwen2.5:7b` + `llava:7b`. Works on most laptops.
    - **Standard** (~19 GB, *recommended*) — adds `deepseek-r1:14b` for deep reasoning.
-   - **Heavy** (~30 GB) — uses `deepseek-r1:32b`. Needs a 24 GB+ VRAM card.
+   - **Heavy** (~30 GB) — uses `deepseek-r1:32b`. Best on 24 GB+ VRAM; smaller
+     cards work via CPU offload (slower).
 3. **Pull models** — progress bar shows download. Models stream from Ollama's CDN.
 
 Setup only runs once. To re-run it manually, launch **"JARVIS Setup"** from
@@ -64,11 +71,61 @@ the Start Menu.
 
 Slash commands inside the panel:
 
-| Command  | What it does                |
-|----------|-----------------------------|
-| `/clear` | Wipe the conversation       |
-| `/help`  | Show command help           |
-| `/quit`  | Close the panel             |
+| Command    | What it does                                              |
+|------------|-----------------------------------------------------------|
+| `/clear`   | Wipe the conversation                                     |
+| `/help`    | Show command help (also shows current sharing status)     |
+| `/quit`    | Close the panel                                           |
+| `/attach <path>` | Attach a file by path (alternative to drag-and-drop) |
+| `/detach`  | Drop the currently attached file                          |
+| `/optin`   | Start sharing future text exchanges to the public dataset |
+| `/optout`  | Stop sharing — nothing more leaves your PC                |
+| `/privacy` | Show exactly what's shared, where, and your install ID    |
+| `/update notes` | Show release notes for the pending update, if any    |
+| `/updates on` / `off` | Toggle the auto-check on launch (on by default) |
+
+## Privacy
+
+On first launch JARVIS Chat asks one question: *"Help improve JARVIS by
+sharing your chats?"* Your answer is saved and you're never asked again
+(use `/optin` / `/optout` to change it).
+
+**If you click No** (the default): no chat data leaves your PC. The app
+talks only to your local Ollama. There is no analytics and no error
+reporting. The only background call is a check of the GitHub Releases
+API on each launch (see *Updates* below) — disable it with `/updates off`.
+
+**If you click Yes** — for *text* exchanges only:
+
+- Each user message + JARVIS's reply is sent to a small proxy on Hugging
+  Face that appends it to a public dataset:
+  [`STEL-LIUM/jarvis-feedback`](https://huggingface.co/datasets/STEL-LIUM/jarvis-feedback).
+  Anyone can browse what's been contributed.
+- Submissions include: model name (e.g. `qwen2.5:7b`), an anonymous random
+  install ID (a UUID generated once per install — no name, no IP), a
+  session ID (resets on `/clear` and on app restart), and a timestamp.
+- **Screenshots are never uploaded** — even when you ask JARVIS to look
+  at your screen. The vision model runs locally and its replies are
+  excluded from sharing.
+- Your install ID and consent decision are stored locally at
+  `%LOCALAPPDATA%\JarvisChat\config.json`. Delete the file to reset.
+
+Type `/privacy` inside the panel any time to see the exact endpoint, the
+dataset URL, and your config file path.
+
+## Updates
+
+JARVIS Chat checks the GitHub Releases API silently on every launch. If
+you're already current, nothing appears — no banner, no nag. If a newer
+release exists, an install dialog opens automatically a moment after the
+panel loads. Accepting downloads `JarvisChat-Setup.exe` and runs it
+silently with `/CLOSEAPPLICATIONS /RESTARTAPPLICATIONS`, which closes the
+chat, replaces the install, and reopens it. Your config file and chat
+history are preserved across updates.
+
+The check is independent from the feedback opt-in — it runs whether you
+share chats or not. Disable it entirely with `/updates off`. When an
+update is pending, `/update notes` shows the release notes.
 
 ## Configuration
 
@@ -94,7 +151,26 @@ Python 3.11+ and [Inno Setup 6](https://jrsoftware.org/isinfo.php) installed.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+**Proprietary — All Rights Reserved.**
+Copyright © 2026 Aryan Guerrero.
+
+This is **not** open-source software. The source code is published for
+transparency and audit only.
+
+**Binary (`JarvisChat-Setup.exe`)** — free to install and use for **personal,
+non-commercial** purposes. You may **not** redistribute, modify, decompile,
+reverse-engineer, or include it in a commercial product.
+
+**Source code** — no rights to use, copy, modify, or redistribute are granted.
+Reading it for audit and transparency is the only permitted use.
+
+**Third-party components** — bundled dependencies (Python, Pillow, tkinterdnd2,
+etc.) remain under their own original open-source licenses.
+
+For commercial or source-code licensing, contact
+**[guerreroaryan@gmail.com](mailto:guerreroaryan@gmail.com)**.
+
+Full terms: [LICENSE](LICENSE).
 
 ## Credits
 

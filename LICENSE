@@ -1,21 +1,105 @@
-MIT License
+JARVIS Chat — Proprietary Software License
 
-Copyright (c) 2026 Aryan Guerrero
+Copyright (c) 2026 Aryan Guerrero. All Rights Reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This software (the "Software"), including its source code, design,
+documentation, assets, and compiled binaries (the "Binary"), is the
+proprietary work of Aryan Guerrero (the "Author"). All rights are
+reserved. No rights are granted to you except as expressly stated below.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. SOURCE CODE
+
+   No license, express or implied, is granted to any person or entity
+   to use, copy, modify, merge, publish, distribute, sublicense, sell,
+   re-host, or create derivative works of any portion of the source
+   code of the Software. The source is published for transparency and
+   audit only. Any other use of the source code requires advance
+   written permission from the Author.
+
+
+2. COMPILED BINARY — END-USER LICENSE
+
+   Subject to your compliance with this License, the Author grants you,
+   the end user, a personal, non-exclusive, non-transferable, revocable
+   license to:
+
+     a) Download the Binary from the Author's official distribution
+        channels.
+     b) Install the Binary on personal computers that you own or
+        control.
+     c) Use the Binary for personal, non-commercial purposes,
+        free of charge.
+
+   You may NOT, without prior written permission from the Author:
+
+     a) Redistribute, mirror, re-host, or otherwise make the Binary
+        available to third parties.
+     b) Modify, adapt, translate, reverse-engineer, decompile, or
+        disassemble the Binary, or attempt to derive its source code,
+        except to the extent that such activity is expressly permitted
+        by applicable law notwithstanding this limitation.
+     c) Use the Binary or any part of it in a commercial product, paid
+        service, or revenue-generating offering.
+     d) Remove, alter, or obscure any copyright, trademark, or
+        attribution notices.
+     e) Use the Binary to develop a competing product.
+
+
+3. THIRD-PARTY COMPONENTS
+
+   The Binary includes open-source components — including, without
+   limitation, the Python interpreter, Pillow, tkinterdnd2, and the
+   tkdnd Tcl/Tk extension — each of which remains licensed under its
+   own original terms. Nothing in this License is intended to limit or
+   override the rights granted by those third-party licenses with
+   respect to those components.
+
+
+4. AUTO-UPDATE
+
+   The Binary may, with your consent, periodically check for and
+   install updates issued by the Author. Updates are governed by the
+   version of this License that accompanies them.
+
+
+5. TERMINATION
+
+   This License terminates automatically and immediately if you breach
+   any of its terms. Upon termination, you must cease all use of the
+   Binary and destroy all copies in your possession.
+
+
+6. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT
+   WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+   TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+   PURPOSE, AND NONINFRINGEMENT. THE AUTHOR DOES NOT WARRANT THAT THE
+   SOFTWARE WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE.
+
+
+7. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+   OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE, INCLUDING
+   ANY LOSS OF DATA, PROFITS, OR BUSINESS.
+
+
+8. CONTACT — LICENSING INQUIRIES
+
+   For commercial licensing, source-code licensing, integration into
+   another product, or any use not expressly permitted by this License,
+   contact:
+
+       Aryan Guerrero
+       guerreroaryan@gmail.com
+
+
+9. ENTIRE AGREEMENT
+
+   This License constitutes the entire agreement between you and the
+   Author regarding the Software and supersedes any prior agreements
+   or communications.
