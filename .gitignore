@@ -26,3 +26,17 @@ desktop.ini
 
 # Local first-run marker (should never be committed)
 .jarvis_setup_done
+
+# Large bundled models — needed at build time but too big for git (use a release asset or LFS)
+src/router_models/
+router_models/
+# Training datasets live on Hugging Face, not git
+training/*.jsonl
+training/*.bak_beforeRepair.jsonl
+training/design_failures*.jsonl
+# Local scratch / build logs
+build/last_build.log
+src/_council_test2.py
+
+# hf_space is a separate repo deployed to a Hugging Face Space, not part of this one
+hf_space/

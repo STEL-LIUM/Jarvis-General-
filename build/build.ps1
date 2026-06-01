@@ -33,10 +33,45 @@ if (-not (Test-Path $pyExe)) {
     if ($LASTEXITCODE -ne 0) { throw "venv creation failed" }
 }
 
-Write-Host "==> Installing build deps (pyinstaller, pillow)" -ForegroundColor Cyan
+Write-Host "==> Installing build deps (pyinstaller, pillow, tkinterdnd2)" -ForegroundColor Cyan
 & $pyExe -m pip install --upgrade pip
-& $pyExe -m pip install pyinstaller pillow
+& $pyExe -m pip install pyinstaller pillow tkinterdnd2
 if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
+
+Write-Host "==> Installing voice deps (faster-whisper, openwakeword, piper-tts, sounddevice)" -ForegroundColor Cyan
+# Voice subsystem is optional at runtime but bundled by default. If any
+# package fails to install (no 3.14 wheel, MSVC missing, etc.), we warn
+# and continue. The .exe still builds; /voice reports "unavailable".
+# Each dep is installed in its own block so a single failure doesn't kill
+# the rest.
+
+function Try-Pip($pkgs, $label) {
+    Write-Host "  ... $label" -ForegroundColor DarkGray
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $pyExe -m pip install @pkgs 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "    $label failed (exit $LASTEXITCODE). Voice will be partial."
+            return $false
+        }
+        return $true
+    } finally {
+        $ErrorActionPreference = $prev
+        $global:LASTEXITCODE = 0
+    }
+}
+
+Try-Pip @("sounddevice", "numpy", "scipy") "sounddevice + numpy + scipy" | Out-Null
+Try-Pip @("faster-whisper")                "faster-whisper (STT)"        | Out-Null
+Try-Pip @("openwakeword")                  "openwakeword"                | Out-Null
+$piperOK = Try-Pip @("piper-tts")     "piper-tts"
+if (-not $piperOK) {
+    Try-Pip @("piper-tts-python")     "piper-tts-python (alt)" | Out-Null
+}
+# scikit-learn: runtime dep for the PROMETHEUS router (unpickle SVC + scaler).
+Try-Pip @("scikit-learn")             "scikit-learn (router)"       | Out-Null
+$global:LASTEXITCODE = 0
 
 # --- 3. Run PyInstaller ------------------------------------------------------
 $workPath = Join-Path $build "work"
@@ -53,6 +88,28 @@ if (-not (Test-Path $exeOut)) {
     throw "PyInstaller didn't produce $exeOut"
 }
 Write-Host "==> Built: $exeOut" -ForegroundColor Green
+
+# --- 3b. Prune bundled test suites (scipy/sklearn/numpy ship their full test
+#         trees via collect_all; they're never imported at runtime). Saves
+#         ~30-50 MB off the installer. Safe: these dirs are pure test code.
+$internal = Join-Path $distPath "JarvisChat\_internal"
+if (Test-Path $internal) {
+    Write-Host "==> Pruning bundled test modules" -ForegroundColor Cyan
+    $before = (Get-ChildItem $internal -Recurse -File -ErrorAction SilentlyContinue |
+               Measure-Object Length -Sum).Sum
+    foreach ($pkg in @("scipy", "sklearn", "numpy", "onnxruntime")) {
+        $pkgDir = Join-Path $internal $pkg
+        if (Test-Path $pkgDir) {
+            Get-ChildItem $pkgDir -Recurse -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -eq "tests" -or $_.Name -eq "test" } |
+                ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+    }
+    $after = (Get-ChildItem $internal -Recurse -File -ErrorAction SilentlyContinue |
+              Measure-Object Length -Sum).Sum
+    $saved = [math]::Round(($before - $after) / 1MB, 1)
+    Write-Host "    pruned ~$saved MB of test modules" -ForegroundColor Cyan
+}
 
 # --- 4. Compile Inno Setup installer ----------------------------------------
 $issPath = Join-Path $build "installer.iss"

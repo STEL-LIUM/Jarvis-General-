@@ -9,7 +9,6 @@ Behavior:
   jarvis_launcher.py --chat   -> always launch the chat panel (skip setup check)
 """
 import sys
-from pathlib import Path
 
 from jarvis_setup import MARKER_FILE
 

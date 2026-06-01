@@ -3,9 +3,9 @@
 ; Output:        build\Output\JarvisChat-Setup.exe
 
 #define MyAppName       "JARVIS Chat"
-#define MyAppVersion    "1.0.0"
+#define MyAppVersion    "1.6.0"
 #define MyAppPublisher  "Aryan Guerrero"
-#define MyAppURL        "https://github.com/your-username/jarvis-chat"
+#define MyAppURL        "https://github.com/STEL-LIUM/Jarvis-General-"
 #define MyAppExeName    "JarvisChat.exe"
 #define MySetupExeName  "JarvisSetup.exe"
 
@@ -26,7 +26,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 OutputDir=Output
 OutputBaseFilename=JarvisChat-Setup
-; SetupIconFile=icon.ico   ; uncomment after dropping an icon.ico into build\
+SetupIconFile=icon.ico
 Compression=lzma2/ultra
 SolidCompression=yes
 WizardStyle=modern
