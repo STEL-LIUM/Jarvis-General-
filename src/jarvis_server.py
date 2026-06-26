@@ -29,7 +29,7 @@ import urllib.request
 from typing import AsyncGenerator
 
 try:
-    from fastapi import Depends, FastAPI, Header, HTTPException, Request
+    from fastapi import Depends, FastAPI, Header, HTTPException
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import StreamingResponse
     from fastapi.staticfiles import StaticFiles
