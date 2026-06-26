@@ -4,7 +4,7 @@ This is a self-contained copy of the generator in geterhun/exo-suit sim/combat/.
 Run it here to build Jarvis training data without cloning the other repo.
 
 Usage:
-    pip install pydantic>=2.0 numpy>=1.24 rich>=13.0
+    pip install pydantic>=2.0 rich>=13.0
     python training/gen_combat_dataset.py --count 10000 --out training/combat_data.jsonl --seed 42
 
 Output: JSONL file, one scenario per line:
@@ -19,19 +19,12 @@ import json
 import math
 import random
 import sys
-from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 try:
     from pydantic import BaseModel, Field
 except ImportError:
     print("pydantic>=2.0 required: pip install pydantic>=2.0", file=sys.stderr)
-    sys.exit(1)
-
-try:
-    import numpy as np
-except ImportError:
-    print("numpy>=1.24 required: pip install numpy>=1.24", file=sys.stderr)
     sys.exit(1)
 
 
@@ -302,7 +295,6 @@ def main() -> None:
     args = parser.parse_args()
 
     rng = random.Random(args.seed)
-    np_rng = np.random.default_rng(args.seed)
 
     try:
         from rich.progress import track
