@@ -67,7 +67,7 @@ launcher_a = Analysis(
                    "jarvis_chat", "jarvis_setup", "jarvis_voice",
                    "jarvis_router", "jarvis_intent", "jarvis_council",
                    "jarvis_license", "jarvis_self", "jarvis_design_memory",
-                   "jarvis_idle", "jarvis_recipes",
+                   "jarvis_idle", "jarvis_recipes", "jarvis_search",
                    "core", "council",
                    "sklearn", "sklearn.svm", "sklearn.preprocessing",
                    "sklearn.linear_model"]

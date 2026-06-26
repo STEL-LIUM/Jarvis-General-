@@ -77,7 +77,7 @@ except Exception as _council_err:
 else:
     _COUNCIL_IMPORT_ERR = None
 
-CLIENT_VERSION = "1.6.0"
+CLIENT_VERSION = "1.7.0"
 
 # Edition: "jarvis" (default) or "manga". Set at build time via the
 # JARVIS_EDITION env var baked into the spec, or per-user in config.json
@@ -190,6 +190,27 @@ EDIT_RE = re.compile(
     r"\bchange\s+(?:the\s+|its\s+)?\w+|"
     r"\b(?:more|less)\s+\w+|"
     r"\bmake\s+(?:it|them|the)\b",
+    re.IGNORECASE,
+)
+
+# Web-search triggers — keywords that strongly indicate the user wants live
+# results rather than training-data knowledge.  Combined with the SEARCH class
+# from the learned intent classifier (same OR logic as SCREEN/DESIGN).
+SEARCH_RE = re.compile(
+    r"\b(?:"
+    r"search\s+(?:for|the\s+web|online|up)|"
+    r"look\s+(?:it\s+)?up\s+online|"
+    r"(?:latest|recent|current|breaking|new)\s+(?:news|updates?|info(?:rmation)?|"
+        r"version|release|patch)|"
+    r"what'?s?\s+(?:the\s+)?(?:latest|new|happening|going\s+on)|"
+    r"what\s+happened\s+(?:to|with)|"
+    r"(?:google|bing|search\s+the\s+web)\s+(?:this|that|for)|"
+    r"find\s+(?:it\s+)?(?:online|on\s+the\s+web)|"
+    r"(?:today|this\s+week)'?s?\s+(?:news|scores?|headlines?)|"
+    r"as\s+of\s+(?:today|now|2025|2026)|"
+    r"is\s+.{1,40}\s+still\s+(?:alive|running|active|available)|"
+    r"did\s+.{1,30}\s+(?:release|announce|launch|drop)"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -547,15 +568,26 @@ def check_blender_version_async(q: queue.Queue) -> None:
 CHAT_URL   = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
 TAGS_URL   = CHAT_URL.rsplit("/api/", 1)[0] + "/api/tags"
 FAST_MODEL = os.getenv("OLLAMA_FAST_MODEL", "qwen2.5:7b")
+# Fast model fallbacks — _autodetect_fast_model() picks the best installed one.
+FAST_MODEL_FALLBACKS = ["qwen3:8b", "qwen2.5:14b", "qwen2.5:7b", "qwen2.5:3b"]
 # DEEP_MODEL starts as the safe Standard-pack default. _autodetect_deep_model()
-# called from main() at startup runs through DEEP_MODEL_FALLBACKS (heaviest
-# first) and swaps in the largest one actually installed in Ollama, unless the
-# user pinned a specific model via $OLLAMA_MODEL.
+# runs through DEEP_MODEL_FALLBACKS (heaviest first) at startup and swaps in
+# the largest model actually installed in Ollama, unless the user pinned one
+# via $OLLAMA_MODEL.  The 80B-class models sit at the top of the list; a 14B
+# install still works fine as the fallback floor.
 DEEP_MODEL = os.getenv("OLLAMA_MODEL",      "deepseek-r1:14b")
-DEEP_MODEL_FALLBACKS = ["deepseek-r1:70b", "deepseek-r1:32b", "deepseek-r1:14b", "deepseek-r1:7b"]
+DEEP_MODEL_FALLBACKS = [
+    # 80B-class (pick whatever the user has pulled)
+    "qwen3:72b", "qwen2.5:72b", "llama3.3:70b",
+    # Heavy reasoning
+    "deepseek-r1:70b", "deepseek-r1:32b",
+    # Standard pack default + lite fallback
+    "deepseek-r1:14b", "qwen3:14b", "deepseek-r1:7b",
+]
 VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5vl:7b")
 # Vision fallbacks if the preferred model isn't pulled (first that exists wins).
-VISION_MODEL_FALLBACKS = ["qwen2.5vl:7b", "llava:13b", "llava:7b"]
+VISION_MODEL_FALLBACKS = ["qwen2.5vl:72b", "qwen2.5vl:7b", "llama3.2-vision:11b",
+                           "llava:13b", "llava:7b"]
 # Code model — used to REPAIR failed design scripts (_fix_design_script). The
 # coder is fast and strong at "fix this error" (little/no <think> reasoning vs
 # deepseek). Repair falls back to FAST_MODEL if the coder isn't pulled, so a
@@ -564,8 +596,8 @@ CODE_MODEL = os.getenv("OLLAMA_CODE_MODEL", "qwen2.5-coder:7b")
 
 
 def _autodetect_deep_model() -> None:
-    """Pick the heaviest installed deepseek-r1 in Ollama. Updates DEEP_MODEL.
-    Skipped when the user pinned a specific model via $OLLAMA_MODEL."""
+    """Pick the heaviest installed model from DEEP_MODEL_FALLBACKS. Updates
+    DEEP_MODEL at startup. Skipped when $OLLAMA_MODEL is set."""
     if os.getenv("OLLAMA_MODEL"):
         return    # user override wins
     try:
@@ -578,6 +610,24 @@ def _autodetect_deep_model() -> None:
     for candidate in DEEP_MODEL_FALLBACKS:
         if candidate in installed:
             DEEP_MODEL = candidate
+            return
+
+
+def _autodetect_fast_model() -> None:
+    """Pick the best installed fast model from FAST_MODEL_FALLBACKS. Updates
+    FAST_MODEL at startup. Skipped when $OLLAMA_FAST_MODEL is set."""
+    if os.getenv("OLLAMA_FAST_MODEL"):
+        return
+    try:
+        with urllib.request.urlopen(TAGS_URL, timeout=4) as r:
+            data = json.load(r)
+        installed = {(m.get("name") or "") for m in data.get("models", [])}
+    except Exception:
+        return
+    global FAST_MODEL
+    for candidate in FAST_MODEL_FALLBACKS:
+        if candidate in installed:
+            FAST_MODEL = candidate
             return
 
 
@@ -1274,6 +1324,15 @@ try:
 except Exception:
     _recipes_mod = None
 
+# Web search: DuckDuckGo HTML scraper — no API key, no extra deps.
+# Falls back gracefully if the module is missing or the network is unreachable.
+try:
+    import jarvis_search as _search_mod
+    HAS_SEARCH = True
+except Exception:
+    _search_mod = None
+    HAS_SEARCH = False
+
 GUMROAD_PRODUCT_URL = "https://stellium6.gumroad.com/l/zigluo"
 
 
@@ -1814,8 +1873,10 @@ class JarvisChat:
         i_label, i_conf = _classify_and_log(text)
         learned_screen = i_label == "SCREEN" and i_conf >= _INTENT_THRESHOLD
         learned_design = i_label == "DESIGN" and i_conf >= _INTENT_THRESHOLD
+        learned_search = i_label == "SEARCH" and i_conf >= _INTENT_THRESHOLD
         want_screen = bool(SCREEN_RE.search(text)) or learned_screen
         want_design = bool(DESIGN_RE.search(text)) or learned_design
+        want_search = HAS_SEARCH and (bool(SEARCH_RE.search(text)) or learned_search)
 
         # An EDIT only counts if we have a previous design AND this isn't itself
         # a fresh "design a ..." request (those start over by design).
@@ -1843,6 +1904,10 @@ class JarvisChat:
             # chat stream entirely — the response IS files, not prose.
             self._set_status("generating design script…")
             threading.Thread(target=self._design_worker, args=(text,),
+                             daemon=True).start()
+        elif want_search:
+            self._set_status("searching the web…")
+            threading.Thread(target=self._search_worker, args=(text,),
                              daemon=True).start()
         else:
             # Route on the user's actual question, not on the wrapped prompt.
@@ -1913,6 +1978,7 @@ class JarvisChat:
                 "           /voice convo on|off|status   (talk back without wake word; off by default)\n"
                 "           /council on|off|status   (multi-model panel for technical questions)\n"
                 "           /intent <text>   (show the learned intent classifier's read on a message)\n"
+                "           /search <query>   (force a live web search; also fires automatically for news / current events)\n"
                 "           /idle on|off|status   (practice 3D designs while idle, gets better over time; off by default)\n"
                 "           /license   (subscription status; /license <key> to activate)"
             )
@@ -1994,6 +2060,8 @@ class JarvisChat:
             )
         elif c == "/intent" or c.startswith("/intent "):
             self._cmd_intent(cmd)
+        elif c == "/search" or c.startswith("/search "):
+            self._cmd_search(cmd)
         elif c == "/license" or c.startswith("/license "):
             self._cmd_license(cmd)
         elif c == "/edition" or c.startswith("/edition "):
@@ -2081,12 +2149,41 @@ class JarvisChat:
             return
         top_label, top_conf = dist[0]
         fires = ""
-        if top_label in ("SCREEN", "DESIGN") and top_conf >= _INTENT_THRESHOLD:
+        if top_label in ("SCREEN", "DESIGN", "SEARCH") and top_conf >= _INTENT_THRESHOLD:
             fires = f"  -> would trigger {top_label}"
         bars = "\n".join(
             f"   {lbl:11s} {p*100:5.1f}%  " + "#" * int(round(p * 20))
             for lbl, p in dist)
         self._note(f"Intent for {query!r}{fires}\n{bars}")
+
+    def _cmd_search(self, cmd: str) -> None:
+        """/search <query> — force a live web search regardless of intent."""
+        query = cmd[len("/search"):].strip()
+        if not query:
+            status = _search_mod.search_status() if _search_mod else "unavailable"
+            self._note(
+                f"Web search: {'available' if HAS_SEARCH else 'unavailable'}  "
+                f"({status})\n"
+                "Usage: /search <your query>\n"
+                "JARVIS also searches automatically when you ask about current "
+                "events, news, or anything that sounds like it needs live info."
+            )
+            return
+        if not HAS_SEARCH:
+            self._note("Web search module not available on this install.")
+            return
+        self._write("You\n", "you_label")
+        self._write(f"/search {query}\n", "msg")
+        self.history.append({"role": "user", "content": query})
+        self._pending_user_msg = query
+        self.busy = True
+        self._set_busy_button(True)
+        self._start_think_anim()
+        self._write("JARVIS\n", "jarvis_label")
+        self.view.mark_set("answer_start", "end-1c")
+        self.view.mark_gravity("answer_start", "left")
+        threading.Thread(target=self._search_worker, args=(query,),
+                         daemon=True).start()
 
     # --- File attachments ------------------------------------------------
     def _on_drop(self, event):
@@ -3450,6 +3547,23 @@ class JarvisChat:
         except Exception as e:
             self.q.put(("fail", str(e)))
 
+    def _search_worker(self, question: str) -> None:
+        """Fetch DuckDuckGo results for `question`, inject them as search
+        context, then stream JARVIS's synthesised answer via _worker()."""
+        self.q.put(("status", "searching the web…"))
+        results = []
+        try:
+            results = _search_mod.search_ddg(question, max_results=6)
+            ctx = _search_mod.format_results(results, question)
+        except Exception as exc:
+            ctx = (f"WEB SEARCH FAILED ({exc}). Answer from training knowledge "
+                   f"and note you couldn't reach the web.")
+        n = len(results)
+        self.q.put(("status", f"synthesising {n} result{'s' if n != 1 else ''}…"))
+        # Inject search results as extra system context. History stays clean —
+        # the raw results block is not stored in the conversation.
+        self._worker(list(self.history), DEEP_MODEL, extra_system=ctx)
+
     def _poll(self):
         try:
             while True:
@@ -3937,6 +4051,7 @@ def main():
     # Pick the heaviest installed deepseek before building the panel so the
     # welcome note shows the model name we'll actually use.
     _autodetect_deep_model()
+    _autodetect_fast_model()
     _autodetect_vision_model()
     # Wire up self-memory: reflect with the FAST model (cheap, frequent) but
     # store/recall from the per-machine config dir.
