@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
+<meta name="theme-color" content="#1e1e2e">
+<link rel="manifest" href="/manifest.json">
+<title>JARVIS</title>
+<style>
+  :root {
+    --bg:       #1e1e2e;
+    --surface:  #181825;
+    --overlay:  #313244;
+    --muted:    #585b70;
+    --fg:       #cdd6f4;
+    --accent:   #cba6f7;
+    --you:      #89b4fa;
+    --jarvis:   #cba6f7;
+    --green:    #a6e3a1;
+    --red:      #f38ba8;
+    --radius:   18px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    font-size: 15px;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Screens ────────────────────────────────────────────────────────────── */
+  .screen { display: none; flex-direction: column; height: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── Header ─────────────────────────────────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--overlay);
+    flex-shrink: 0;
+    gap: 10px;
+  }
+  .header-title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--accent);
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.online  { background: var(--green); }
+  .status-dot.error   { background: var(--red); }
+  .header-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 8px;
+    line-height: 1;
+    -webkit-appearance: none;
+  }
+  .header-btn:active { background: var(--overlay); }
+
+  /* ── Messages ────────────────────────────────────────────────────────────── */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .msg-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .msg-row.you { align-items: flex-end; }
+  .msg-row.jarvis { align-items: flex-start; }
+
+  .msg-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    padding: 0 4px;
+  }
+  .msg-row.you .msg-label { color: var(--you); }
+  .msg-row.jarvis .msg-label { color: var(--jarvis); }
+
+  .bubble {
+    max-width: 82%;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    line-height: 1.55;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .msg-row.you .bubble {
+    background: var(--overlay);
+    border-bottom-right-radius: 5px;
+    color: var(--fg);
+  }
+  .msg-row.jarvis .bubble {
+    background: var(--surface);
+    border: 1px solid var(--overlay);
+    border-bottom-left-radius: 5px;
+    color: var(--fg);
+  }
+
+  /* Inline code */
+  .bubble code {
+    font-family: "SF Mono", "Fira Code", Menlo, monospace;
+    font-size: 13px;
+    background: var(--overlay);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+  /* Code blocks */
+  .bubble pre {
+    background: var(--overlay);
+    border-radius: 10px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin: 6px 0;
+    font-family: "SF Mono", "Fira Code", Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--fg);
+  }
+  .bubble pre code { background: none; padding: 0; color: inherit; }
+
+  /* Thinking dots */
+  .thinking {
+    display: flex;
+    gap: 5px;
+    padding: 12px 14px;
+  }
+  .thinking span {
+    width: 7px; height: 7px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .thinking span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40%           { opacity: 1;   transform: scale(1); }
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 24px;
+  }
+  .empty-state .logo { font-size: 48px; }
+  .empty-state p { font-size: 14px; line-height: 1.5; }
+
+  /* ── Input bar ───────────────────────────────────────────────────────────── */
+  .input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 12px calc(var(--safe-bot) + 10px);
+    background: var(--surface);
+    border-top: 1px solid var(--overlay);
+    flex-shrink: 0;
+  }
+  .input-wrap {
+    flex: 1;
+    background: var(--overlay);
+    border-radius: 22px;
+    display: flex;
+    align-items: flex-end;
+    padding: 2px 4px 2px 14px;
+    gap: 4px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); }
+  #input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.4;
+    resize: none;
+    max-height: 120px;
+    padding: 8px 0;
+    -webkit-appearance: none;
+  }
+  #input::placeholder { color: var(--muted); }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    line-height: 1;
+    flex-shrink: 0;
+    -webkit-appearance: none;
+  }
+  .icon-btn:active { background: var(--overlay); color: var(--fg); }
+  .send-btn {
+    width: 42px; height: 42px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    -webkit-appearance: none;
+    transition: opacity 0.15s;
+  }
+  .send-btn:disabled { opacity: 0.4; cursor: default; }
+  .send-btn:active:not(:disabled) { opacity: 0.75; }
+
+  /* Image preview above input */
+  .img-preview {
+    display: none;
+    position: relative;
+    margin: 0 12px 6px;
+  }
+  .img-preview.has-image { display: block; }
+  .img-preview img {
+    height: 80px;
+    border-radius: 12px;
+    display: block;
+  }
+  .img-preview-clear {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 22px; height: 22px;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    -webkit-appearance: none;
+  }
+
+  /* ── Settings screen ─────────────────────────────────────────────────────── */
+  .settings-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--overlay);
+    flex-shrink: 0;
+  }
+  .settings-header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .field input {
+    background: var(--overlay);
+    border: 1px solid var(--muted);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+
+  .field-hint {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-appearance: none;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.75; }
+
+  .connect-status {
+    font-size: 13px;
+    text-align: center;
+    color: var(--muted);
+    min-height: 18px;
+  }
+  .connect-status.ok    { color: var(--green); }
+  .connect-status.error { color: var(--red); }
+
+  .divider {
+    height: 1px;
+    background: var(--overlay);
+    margin: 4px 0;
+  }
+
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--overlay);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .info-box .info-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .info-box .info-val {
+    font-size: 13px;
+    color: var(--fg);
+    font-family: "SF Mono", Menlo, monospace;
+    word-break: break-all;
+  }
+
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ── Chat screen ─────────────────────────────────────────────────────────── -->
+<div id="chat-screen" class="screen active">
+  <div class="header">
+    <div class="header-title">
+      <span class="status-dot" id="status-dot"></span>
+      JARVIS
+    </div>
+    <button class="header-btn" id="clear-btn" title="Clear chat">🗑</button>
+    <button class="header-btn" id="settings-btn" title="Settings">⚙️</button>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="empty-state" id="empty-state">
+      <div class="logo">◉</div>
+      <p>Your PC's JARVIS is one message away.<br>Type something below.</p>
+    </div>
+  </div>
+
+  <div class="img-preview" id="img-preview">
+    <img id="img-preview-img" src="" alt="attachment">
+    <button class="img-preview-clear" id="img-clear-btn">✕</button>
+  </div>
+
+  <div class="input-bar">
+    <div class="input-wrap">
+      <textarea id="input" rows="1" placeholder="Message JARVIS…" autocomplete="off"
+        autocorrect="on" spellcheck="true"></textarea>
+      <button class="icon-btn" id="img-btn" title="Attach image">📷</button>
+    </div>
+    <button class="send-btn" id="send-btn" disabled>↑</button>
+  </div>
+  <input type="file" id="file-input" accept="image/*" capture="environment">
+</div>
+
+<!-- ── Settings screen ────────────────────────────────────────────────────── -->
+<div id="settings-screen" class="screen">
+  <div class="settings-header">
+    <button class="header-btn" id="back-btn">‹</button>
+    <h1>Settings</h1>
+  </div>
+
+  <div class="settings-body">
+    <div class="field">
+      <label>PC Server URL</label>
+      <input type="url" id="server-url" placeholder="http://192.168.1.100:8765"
+        inputmode="url" autocomplete="off" autocorrect="off" autocapitalize="off"
+        spellcheck="false">
+      <span class="field-hint">
+        Run <code>python src/jarvis_server.py --setup</code> on your PC to get
+        this. For remote access, use your Tailscale IP instead.
+      </span>
+    </div>
+
+    <div class="field">
+      <label>Access Token</label>
+      <input type="password" id="token-input" placeholder="paste token here"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <span class="field-hint">
+        The token is printed when the server starts. Keep it secret.
+      </span>
+    </div>
+
+    <button class="btn-primary" id="save-btn">Save & Connect</button>
+    <div class="connect-status" id="connect-status"></div>
+
+    <div class="divider"></div>
+
+    <div id="server-info" style="display:none">
+      <div class="info-box" id="info-box"></div>
+    </div>
+
+    <div class="field">
+      <label>How to install this app</label>
+      <span class="field-hint">
+        In Safari, tap the Share button (□↑) then choose
+        <strong>Add to Home Screen</strong>. JARVIS will appear as an app icon
+        and open without the browser chrome.
+      </span>
+    </div>
+
+    <div class="field">
+      <label>Remote access from anywhere</label>
+      <span class="field-hint">
+        Install <strong>Tailscale</strong> on your PC and iPhone. Both devices
+        join the same private network automatically. Use the Tailscale IP (shown
+        in the Tailscale app) as your server URL instead of the WiFi one.
+      </span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Storage ───────────────────────────────────────────────────────────────────
+const store = {
+  get: k => localStorage.getItem(k) || '',
+  set: (k, v) => localStorage.setItem(k, v),
+};
+
+let serverUrl = store.get('serverUrl');
+let token     = store.get('token');
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const chatScreen     = document.getElementById('chat-screen');
+const settingsScreen = document.getElementById('settings-screen');
+const messagesEl     = document.getElementById('messages');
+const emptyState     = document.getElementById('empty-state');
+const inputEl        = document.getElementById('input');
+const sendBtn        = document.getElementById('send-btn');
+const imgBtn         = document.getElementById('img-btn');
+const fileInput      = document.getElementById('file-input');
+const imgPreview     = document.getElementById('img-preview');
+const imgPreviewImg  = document.getElementById('img-preview-img');
+const imgClearBtn    = document.getElementById('img-clear-btn');
+const statusDot      = document.getElementById('status-dot');
+const clearBtn       = document.getElementById('clear-btn');
+const settingsBtn    = document.getElementById('settings-btn');
+const backBtn        = document.getElementById('back-btn');
+const serverUrlInput = document.getElementById('server-url');
+const tokenInput     = document.getElementById('token-input');
+const saveBtn        = document.getElementById('save-btn');
+const connectStatus  = document.getElementById('connect-status');
+const serverInfo     = document.getElementById('server-info');
+const infoBox        = document.getElementById('info-box');
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let history   = [];   // [{role, content}]
+let busy      = false;
+let imageB64  = null; // current attached image (base64)
+let stopFlag  = false;
+
+// ── Auto-grow textarea ────────────────────────────────────────────────────────
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  sendBtn.disabled = !inputEl.value.trim() && !imageB64;
+});
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled) doSend();
+  }
+});
+
+// ── Image attachment ──────────────────────────────────────────────────────────
+imgBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    // Strip the data:...;base64, prefix
+    imageB64 = dataUrl.split(',')[1];
+    imgPreviewImg.src = dataUrl;
+    imgPreview.classList.add('has-image');
+    sendBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+  fileInput.value = '';
+});
+
+imgClearBtn.addEventListener('click', clearImage);
+
+function clearImage() {
+  imageB64 = null;
+  imgPreview.classList.remove('has-image');
+  imgPreviewImg.src = '';
+  sendBtn.disabled = !inputEl.value.trim();
+}
+
+// ── Send / Stop ───────────────────────────────────────────────────────────────
+sendBtn.addEventListener('click', () => {
+  if (busy) { stopFlag = true; return; }
+  doSend();
+});
+
+async function doSend() {
+  const text = inputEl.value.trim();
+  if (!text && !imageB64) return;
+  if (!serverUrl || !token) { showSettings(); return; }
+
+  const img = imageB64;
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+  clearImage();
+
+  // Add user message to UI + history
+  const userContent = text || (img ? '[image]' : '');
+  appendMessage('you', userContent);
+  history.push({ role: 'user', content: text || 'Describe this image.' });
+
+  // Show thinking indicator
+  const thinkingRow = appendThinking();
+  busy = true;
+  stopFlag = false;
+  sendBtn.textContent = '■';
+  sendBtn.disabled = false;
+
+  try {
+    const response = await fetch(`${serverUrl}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Token': token,
+      },
+      body: JSON.stringify({
+        messages: history,
+        image_b64: img || null,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    thinkingRow.remove();
+    const jarvisRow = appendMessage('jarvis', '');
+    const bubbleEl  = jarvisRow.querySelector('.bubble');
+    let   fullReply = '';
+
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while (true) {
+      if (stopFlag) { reader.cancel(); break; }
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const obj = JSON.parse(line.slice(6));
+          if (obj.error) throw new Error(obj.error);
+          if (obj.content) {
+            fullReply += obj.content;
+            bubbleEl.innerHTML = renderMarkdown(fullReply);
+            scrollToBottom();
+          }
+          if (obj.done) break;
+        } catch (parseErr) { /* partial JSON – skip */ }
+      }
+    }
+
+    if (fullReply) {
+      history.push({ role: 'assistant', content: fullReply });
+    }
+    emptyState.style.display = 'none';
+
+  } catch (err) {
+    thinkingRow.remove();
+    appendMessage('jarvis',
+      `Connection error: ${err.message}\n\nMake sure:\n` +
+      `• JARVIS server is running on your PC\n` +
+      `• Your phone and PC are on the same WiFi (or Tailscale)\n` +
+      `• URL and token are correct in ⚙ Settings`
+    );
+    setStatus('error');
+  } finally {
+    busy = false;
+    stopFlag = false;
+    sendBtn.textContent = '↑';
+    sendBtn.disabled = !inputEl.value.trim();
+  }
+}
+
+// ── Markdown renderer (minimal — handles code blocks, inline code, bold) ─────
+function renderMarkdown(text) {
+  // Escape HTML first
+  let out = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Fenced code blocks  ```lang\n...\n```
+  out = out.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
+    `<pre><code>${code}</code></pre>`
+  );
+
+  // Inline code `...`
+  out = out.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+  // Bold **...**
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Newlines → <br> (only outside pre blocks)
+  out = out.replace(/\n/g, '<br>');
+
+  return out;
+}
+
+// ── Message helpers ───────────────────────────────────────────────────────────
+function appendMessage(role, content) {
+  emptyState.style.display = 'none';
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'you' ? 'You' : 'JARVIS';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = content ? renderMarkdown(content) : '';
+  row.appendChild(label);
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function appendThinking() {
+  const row = document.createElement('div');
+  row.className = 'msg-row jarvis';
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = 'JARVIS';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble thinking';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+  row.appendChild(label);
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function scrollToBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ── Clear chat ────────────────────────────────────────────────────────────────
+clearBtn.addEventListener('click', () => {
+  if (!history.length) return;
+  if (!confirm('Clear this conversation?')) return;
+  history = [];
+  messagesEl.innerHTML = '';
+  messagesEl.appendChild(emptyState);
+  emptyState.style.display = '';
+});
+
+// ── Status dot ────────────────────────────────────────────────────────────────
+function setStatus(state) {
+  statusDot.className = 'status-dot ' + (state || '');
+}
+
+async function pingServer() {
+  if (!serverUrl || !token) { setStatus(''); return; }
+  try {
+    const r = await fetch(`${serverUrl}/api/status`, {
+      headers: { 'X-Token': token },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (r.ok) {
+      setStatus('online');
+      return await r.json();
+    }
+    setStatus('error');
+  } catch {
+    setStatus('error');
+  }
+  return null;
+}
+
+// ── Settings screen ────────────────────────────────────────────────────────────
+settingsBtn.addEventListener('click', showSettings);
+backBtn.addEventListener('click', () => showScreen('chat'));
+
+function showSettings() {
+  serverUrlInput.value = serverUrl;
+  tokenInput.value     = token;
+  connectStatus.textContent = '';
+  connectStatus.className   = 'connect-status';
+  showScreen('settings');
+}
+
+function showScreen(name) {
+  chatScreen.classList.toggle('active', name === 'chat');
+  settingsScreen.classList.toggle('active', name === 'settings');
+}
+
+saveBtn.addEventListener('click', async () => {
+  const url = serverUrlInput.value.trim().replace(/\/$/, '');
+  const tok = tokenInput.value.trim();
+  if (!url) { showConnectStatus('Enter the server URL', 'error'); return; }
+  if (!tok) { showConnectStatus('Enter the token', 'error'); return; }
+
+  saveBtn.disabled = true;
+  showConnectStatus('Connecting…', '');
+
+  try {
+    const r = await fetch(`${url}/api/status`, {
+      headers: { 'X-Token': tok },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    serverUrl = url;
+    token     = tok;
+    store.set('serverUrl', url);
+    store.set('token', tok);
+    setStatus('online');
+
+    showConnectStatus('Connected ✓', 'ok');
+    showServerInfo(data);
+    setTimeout(() => showScreen('chat'), 900);
+  } catch (err) {
+    showConnectStatus(`Failed: ${err.message}`, 'error');
+    setStatus('error');
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+function showConnectStatus(msg, cls) {
+  connectStatus.textContent = msg;
+  connectStatus.className   = 'connect-status ' + cls;
+}
+
+function showServerInfo(data) {
+  if (!data) return;
+  serverInfo.style.display = 'block';
+  infoBox.innerHTML = `
+    <div class="info-label">Connected Server</div>
+    <div class="info-val">Ollama: ${data.ok ? '✓ running' : '✗ not reachable'}</div>
+    <div class="info-val">Fast model: ${data.fast_model}</div>
+    <div class="info-val">Deep model: ${data.deep_model}</div>
+    <div class="info-val">Vision: ${data.vision_model}</div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+if (!serverUrl || !token) {
+  showSettings();
+} else {
+  pingServer();
+  setInterval(pingServer, 30_000);
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

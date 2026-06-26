@@ -1,2 +1,7 @@
 pillow>=10.0.0
 tkinterdnd2>=0.4.0
+
+# Mobile server (optional — only needed when running jarvis_server.py)
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
