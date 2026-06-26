@@ -77,7 +77,7 @@ except Exception as _council_err:
 else:
     _COUNCIL_IMPORT_ERR = None
 
-CLIENT_VERSION = "1.7.0"
+CLIENT_VERSION = "1.9.4"
 
 # Edition: "jarvis" (default) or "manga". Set at build time via the
 # JARVIS_EDITION env var baked into the spec, or per-user in config.json
@@ -567,32 +567,34 @@ def check_blender_version_async(q: queue.Queue) -> None:
 # --- Config ----------------------------------------------------------------
 CHAT_URL   = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
 TAGS_URL   = CHAT_URL.rsplit("/api/", 1)[0] + "/api/tags"
-FAST_MODEL = os.getenv("OLLAMA_FAST_MODEL", "qwen2.5:7b")
+FAST_MODEL = os.getenv("OLLAMA_FAST_MODEL", "qwen3:8b")
 # Fast model fallbacks — _autodetect_fast_model() picks the best installed one.
 FAST_MODEL_FALLBACKS = ["qwen3:8b", "qwen2.5:14b", "qwen2.5:7b", "qwen2.5:3b"]
-# DEEP_MODEL starts as the safe Standard-pack default. _autodetect_deep_model()
+# DEEP_MODEL starts as the qwen3:30b-a3b MoE default. _autodetect_deep_model()
 # runs through DEEP_MODEL_FALLBACKS (heaviest first) at startup and swaps in
 # the largest model actually installed in Ollama, unless the user pinned one
 # via $OLLAMA_MODEL.  The 80B-class models sit at the top of the list; a 14B
 # install still works fine as the fallback floor.
-DEEP_MODEL = os.getenv("OLLAMA_MODEL",      "deepseek-r1:14b")
+DEEP_MODEL = os.getenv("OLLAMA_MODEL",      "qwen3:30b-a3b")
 DEEP_MODEL_FALLBACKS = [
+    # MoE efficient (default — runs fast on 12 GB VRAM)
+    "qwen3:30b-a3b",
     # 80B-class (pick whatever the user has pulled)
     "qwen3:72b", "qwen2.5:72b", "llama3.3:70b",
     # Heavy reasoning
     "deepseek-r1:70b", "deepseek-r1:32b",
-    # Standard pack default + lite fallback
+    # Standard pack + lite fallback
     "deepseek-r1:14b", "qwen3:14b", "deepseek-r1:7b",
 ]
-VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5vl:7b")
+VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen3-vl:8b")
 # Vision fallbacks if the preferred model isn't pulled (first that exists wins).
-VISION_MODEL_FALLBACKS = ["qwen2.5vl:72b", "qwen2.5vl:7b", "llama3.2-vision:11b",
-                           "llava:13b", "llava:7b"]
+VISION_MODEL_FALLBACKS = ["qwen3-vl:8b", "qwen2.5vl:72b", "qwen2.5vl:7b",
+                           "llama3.2-vision:11b", "llava:13b", "llava:7b"]
 # Code model — used to REPAIR failed design scripts (_fix_design_script). The
 # coder is fast and strong at "fix this error" (little/no <think> reasoning vs
 # deepseek). Repair falls back to FAST_MODEL if the coder isn't pulled, so a
 # missing model never silently breaks auto-repair.
-CODE_MODEL = os.getenv("OLLAMA_CODE_MODEL", "qwen2.5-coder:7b")
+CODE_MODEL = os.getenv("OLLAMA_CODE_MODEL", "qwen3-coder:30b")
 
 
 def _autodetect_deep_model() -> None:

@@ -3,7 +3,7 @@
 ; Output:        build\Output\JarvisChat-Setup.exe
 
 #define MyAppName       "JARVIS Chat"
-#define MyAppVersion    "1.7.0"
+#define MyAppVersion    "1.9.4"
 #define MyAppPublisher  "Aryan Guerrero"
 #define MyAppURL        "https://github.com/STEL-LIUM/Jarvis-General-"
 #define MyAppExeName    "JarvisChat.exe"
