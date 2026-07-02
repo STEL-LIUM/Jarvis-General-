@@ -1,2 +1,6 @@
 pillow>=10.0.0
 tkinterdnd2>=0.4.0
+send2trash>=1.8.0
+fpdf2>=2.7.0
+PySide6>=6.10.0
+

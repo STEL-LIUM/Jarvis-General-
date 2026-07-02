@@ -27,6 +27,15 @@ desktop.ini
 # Local first-run marker (should never be committed)
 .jarvis_setup_done
 
+# Runtime secrets / per-machine config (never commit)
+comp_keys.txt
+server_token.txt
+client.json
+license.json
+pyi_out.log
+pyi_err.log
+pyi_pid.txt
+
 # Large bundled models — needed at build time but too big for git (use a release asset or LFS)
 src/router_models/
 router_models/
@@ -40,3 +49,9 @@ src/_council_test2.py
 
 # hf_space is a separate repo deployed to a Hugging Face Space, not part of this one
 hf_space/
+
+iscc_out.log
+iscc_err.log
+iscc_pid.txt
+_installer_ext.iss
+boot.log

@@ -1,2 +1,0 @@
-[graphify label] batch 1/1 (73 communities) failed: Expecting value: line 1 column 1 (char 0)
-[graphify label] warning: community labeling failed (Expecting value: line 1 column 1 (char 0)); using Community N placeholders.
