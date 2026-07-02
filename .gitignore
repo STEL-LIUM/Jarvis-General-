@@ -55,3 +55,6 @@ iscc_err.log
 iscc_pid.txt
 _installer_ext.iss
 boot.log
+gate_pid.txt
+gate_out.log
+gate_err.log
