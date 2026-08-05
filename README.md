@@ -1,4 +1,4 @@
-# JARVIS Chat
+# Triton Chat
 
 A translucent floating desktop chat panel for talking to a local AI assistant
 in real time. Borderless, always-on-top, fades to see-through when you're not
