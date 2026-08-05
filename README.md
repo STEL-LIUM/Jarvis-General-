@@ -5,7 +5,7 @@ in real time. Borderless, always-on-top, fades to see-through when you're not
 using it — so a movie, stream, or app behind it stays visible right through it.
 The moment you hover or click in, it snaps fully solid.
 
-Runs **fully local** via [Ollama](https://ollama.com). No accounts, no API
+Runs **fully local** via WE USE A CUSTOM LLAMA.CCP. No accounts, no API
 keys, no cloud. Ask "what's on my screen?" and it'll actually look — using a
 local vision model. Ask it to design a 3D model and it writes + runs the
 Blender script for you. Talk to it by voice. And it remembers — building
