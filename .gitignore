@@ -1,60 +1,19 @@
-# Python
+# Build and run artifacts — these are what bloated this repo to 669 MB
+# before the 2026-08-16 history rewrite. Keep them out.
+*.log
+*.onnx
+*.pkl
+*.pkl.bak
+*.safetensors
+*.gguf
 __pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-env/
-
-# PyInstaller
-build/work/
+*.pyc
+dist/
 build/dist/
-*.spec.bak
-
-# Inno Setup
+build/work/
 build/Output/
-*.iss.bak
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-Thumbs.db
-.DS_Store
-desktop.ini
-
-# Local first-run marker (should never be committed)
-.jarvis_setup_done
-
-# Runtime secrets / per-machine config (never commit)
-comp_keys.txt
-server_token.txt
-client.json
-license.json
-pyi_out.log
-pyi_err.log
-pyi_pid.txt
-
-# Large bundled models — needed at build time but too big for git (use a release asset or LFS)
-src/router_models/
 router_models/
-# Training datasets live on Hugging Face, not git
-training/*.jsonl
-training/*.bak_beforeRepair.jsonl
-training/design_failures*.jsonl
-# Local scratch / build logs
-build/last_build.log
-src/_council_test2.py
-
-# hf_space is a separate repo deployed to a Hugging Face Space, not part of this one
-hf_space/
-
-iscc_out.log
-iscc_err.log
-iscc_pid.txt
-_installer_ext.iss
-boot.log
-gate_pid.txt
-gate_out.log
-gate_err.log
+training/spec_previews/
+src/graphify-out/
+quality_out/
+*.jsonl
